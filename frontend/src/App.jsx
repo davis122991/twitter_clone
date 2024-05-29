@@ -67,7 +67,7 @@ function App() {
           element={authUser ? <ProfilePage /> : <Navigate to='/' />}
         />
       </Routes>
-      {authUser && <RightPanel />}
+      {/* {authUser && <RightPanel />} */}
       <Toaster />
     </div>
   );
