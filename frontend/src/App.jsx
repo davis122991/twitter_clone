@@ -67,7 +67,7 @@ function App() {
           element={authUser ? <ProfilePage /> : <Navigate to='/' />}
         />
       </Routes>
-      {authUser && <RightPanel className='sm:hidden' />}
+      {authUser && <RightPanel />}
       <Toaster />
     </div>
   );

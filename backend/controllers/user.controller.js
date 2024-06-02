@@ -159,6 +159,7 @@ export const updateUser = async (req, res) => {
       profileImg = uploadedResponse.secure_url;
     }
 
+    // Update user cover image
     if (coverImg) {
       if (user.profileImg) {
         await cloudinary.uploader.destroy(

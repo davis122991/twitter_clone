@@ -14,6 +14,9 @@ import { MdEdit } from 'react-icons/md';
 import { useQuery } from '@tanstack/react-query';
 import { formatMemberSinceDate } from '../../utils/date';
 
+import useFollow from '../../hooks/useFollow';
+import useUpdateUserProfile from '../../hooks/useUpdateUserProfile';
+
 const ProfilePage = () => {
   const [coverImg, setCoverImg] = useState(null);
   const [profileImg, setProfileImg] = useState(null);
@@ -24,7 +27,8 @@ const ProfilePage = () => {
 
   const { username } = useParams();
 
-  const isMyProfile = true;
+  const { follow, isPending } = useFollow();
+  const { data: authUser } = useQuery({ queryKey: ['authUser'] });
 
   const {
     data: user,
@@ -37,9 +41,9 @@ const ProfilePage = () => {
       try {
         const res = await fetch(`/api/users/profile/${username}`);
         const data = await res.json();
-
-        if (!res.ok) throw new Error(data.error || 'Something went wrong');
-
+        if (!res.ok) {
+          throw new Error(data.error || 'Something went wrong');
+        }
         return data;
       } catch (error) {
         throw new Error(error);
@@ -47,7 +51,11 @@ const ProfilePage = () => {
     },
   });
 
+  const { isUpdatingProfile, updateProfile } = useUpdateUserProfile();
+
+  const isMyProfile = authUser._id === user?._id;
   const memberSinceDate = formatMemberSinceDate(user?.createdAt);
+  const amIFollowing = authUser?.following.includes(user?._id);
 
   const handleImgChange = (e, state) => {
     const file = e.target.files[0];
@@ -63,7 +71,7 @@ const ProfilePage = () => {
 
   useEffect(() => {
     refetch();
-  }, [username, refetch, feedType]);
+  }, [username, refetch]);
 
   return (
     <>
@@ -94,26 +102,26 @@ const ProfilePage = () => {
                   className='h-52 w-full object-cover'
                   alt='cover image'
                 />
-                {isMyProfile && (
+                {/* {isMyProfile && (
                   <div
                     className='absolute top-2 right-2 rounded-full p-2 bg-gray-800 bg-opacity-75 cursor-pointer opacity-0 group-hover/cover:opacity-100 transition duration-200'
                     onClick={() => coverImgRef.current.click()}
                   >
                     <MdEdit className='w-5 h-5 text-white' />
                   </div>
-                )}
+                )} */}
 
                 <input
                   type='file'
-                  accept='image/*'
                   hidden
+                  accept='image/*'
                   ref={coverImgRef}
                   onChange={(e) => handleImgChange(e, 'coverImg')}
                 />
                 <input
                   type='file'
-                  accept='image/*'
                   hidden
+                  accept='image/*'
                   ref={profileImgRef}
                   onChange={(e) => handleImgChange(e, 'profileImg')}
                 />
@@ -127,33 +135,39 @@ const ProfilePage = () => {
                         '/avatar-placeholder.png'
                       }
                     />
-                    <div className='absolute top-5 right-3 p-1 bg-primary rounded-full group-hover/avatar:opacity-100 opacity-0 cursor-pointer'>
+                    {/* <div className='absolute top-5 right-3 p-1 bg-primary rounded-full group-hover/avatar:opacity-100 opacity-0 cursor-pointer'>
                       {isMyProfile && (
                         <MdEdit
                           className='w-4 h-4 text-white'
                           onClick={() => profileImgRef.current.click()}
                         />
                       )}
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>
               <div className='flex justify-end px-4 mt-5'>
-                {isMyProfile && <EditProfileModal />}
+                {isMyProfile && <EditProfileModal authUser={authUser} />}
                 {!isMyProfile && (
                   <button
                     className='btn btn-outline rounded-full btn-sm'
-                    onClick={() => alert('Followed successfully')}
+                    onClick={() => follow(user?._id)}
                   >
-                    Follow
+                    {isPending && 'Loading...'}
+                    {!isPending && amIFollowing && 'Unfollow'}
+                    {!isPending && !amIFollowing && 'Follow'}
                   </button>
                 )}
                 {(coverImg || profileImg) && (
                   <button
                     className='btn btn-primary rounded-full btn-sm text-white px-4 ml-2'
-                    onClick={() => alert('Profile updated successfully')}
+                    onClick={async () => {
+                      await updateProfile({ coverImg, profileImg });
+                      setProfileImg(null);
+                      setCoverImg(null);
+                    }}
                   >
-                    Update
+                    {isUpdatingProfile ? 'Updating...' : 'Update'}
                   </button>
                 )}
               </div>
@@ -173,12 +187,13 @@ const ProfilePage = () => {
                       <>
                         <FaLink className='w-3 h-3 text-slate-500' />
                         <a
-                          href='https://youtube.com/'
+                          href='https://youtube.com/@asaprogrammer_'
                           target='_blank'
                           rel='noreferrer'
                           className='text-sm text-blue-500 hover:underline'
                         >
-                          youtube.com/
+                          {/* Updated this after recording the video. I forgot to update this while recording, sorry, thx. */}
+                          {user?.link}
                         </a>
                       </>
                     </div>
